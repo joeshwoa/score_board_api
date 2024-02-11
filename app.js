@@ -42,6 +42,7 @@ app.post('/teams/:teamName/score', (req, res) => {
 // API to increment team score by team name
 app.put('/teams/:teamName/score/increment', (req, res) => {
   const { teamName } = req.params;
+  const { score } = req.body;
 
   // Find the team by name
   const team = teams.find(t => t.name === teamName);
@@ -50,13 +51,14 @@ app.put('/teams/:teamName/score/increment', (req, res) => {
   }
 
   // Increment the team's score
-  team.score += 1;
+  team.score += score;
   res.json({ message: 'Score incremented successfully', team });
 });
 
 // API to decrement team score by team name
 app.put('/teams/:teamName/score/decrement', (req, res) => {
   const { teamName } = req.params;
+  const { score } = req.body;
 
   // Find the team by name
   const team = teams.find(t => t.name === teamName);
@@ -65,7 +67,7 @@ app.put('/teams/:teamName/score/decrement', (req, res) => {
   }
 
   // Decrement the team's score
-  team.score -= 1;
+  team.score -= score;
   res.json({ message: 'Score decremented successfully', team });
 });
 
