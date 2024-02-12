@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -7,68 +8,105 @@ const PORT = process.env.PORT || 3000;
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
 
-// Dummy data for teams and scores
-let teams = [
-  { name: 'Pawn', score: 0 },
-  { name: 'Bishop', score: 0 },
-  { name: 'Knight', score: 0 },
-  { name: 'Rook', score: 0 },
-  { name: 'Queen', score: 0 },
-  { name: 'King', score: 0 }
-];
+// Connect to MongoDB
+mongoose.connect('mongodb+srv://joeshwoageorge:J0eshwoa@jodb.0fzmbui.mongodb.net/', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: false // To avoid deprecation warnings
+})
+.then(() => {
+  console.log("Connected to MongoDB");
+})
+.catch((err) => {
+  console.error("Error connecting to MongoDB:", err);
+});
+
+// Define a mongoose schema for the teams collection
+const teamSchema = new mongoose.Schema({
+  name: String,
+  score: Number
+});
+
+// Create a mongoose model based on the schema
+const Team = mongoose.model('Team', teamSchema);
 
 // API to get teams and their scores sorted by score (biggest score first)
-app.get('/teams', (req, res) => {
-  const sortedTeams = teams.slice().sort((a, b) => b.score - a.score); // Sorting teams by score in descending order
-  res.json(sortedTeams);
+app.get('/teams', async (req, res) => {
+  try {
+    const sortedTeams = await Team.find().sort({ score: -1 });
+    res.json(sortedTeams);
+  } catch (err) {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 // API to set team score by team name
-app.post('/teams/:teamName/score', (req, res) => {
+app.post('/teams/:teamName/score', async (req, res) => {
   const { teamName } = req.params;
   const { score } = req.body;
 
-  // Find the team by name
-  const team = teams.find(t => t.name === teamName);
-  if (!team) {
-    return res.status(404).json({ message: 'Team not found' });
-  }
+  try {
+    let team = await Team.findOne({ name: teamName });
 
-  // Update the team's score
-  team.score = score;
-  res.json({ message: 'Score updated successfully', team });
+    if (!team) {
+      team = new Team({
+        name: teamName,
+        score: score
+      });
+    } else {
+      team.score = score;
+    }
+
+    await team.save();
+
+    res.json({ message: 'Score updated successfully', team });
+  } catch (err) {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 // API to increment team score by team name
-app.put('/teams/:teamName/score/increment', (req, res) => {
+app.put('/teams/:teamName/score/increment', async (req, res) => {
   const { teamName } = req.params;
   const { score } = req.body;
 
-  // Find the team by name
-  const team = teams.find(t => t.name === teamName);
-  if (!team) {
-    return res.status(404).json({ message: 'Team not found' });
-  }
+  try {
+    let team = await Team.findOneAndUpdate(
+      { name: teamName },
+      { $inc: { score: score } },
+      { new: true }
+    );
 
-  // Increment the team's score
-  team.score += score;
-  res.json({ message: 'Score incremented successfully', team });
+    if (!team) {
+      return res.status(404).json({ message: 'Team not found' });
+    }
+
+    res.json({ message: 'Score incremented successfully', team });
+  } catch (err) {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 // API to decrement team score by team name
-app.put('/teams/:teamName/score/decrement', (req, res) => {
+app.put('/teams/:teamName/score/decrement', async (req, res) => {
   const { teamName } = req.params;
   const { score } = req.body;
 
-  // Find the team by name
-  const team = teams.find(t => t.name === teamName);
-  if (!team) {
-    return res.status(404).json({ message: 'Team not found' });
-  }
+  try {
+    let team = await Team.findOneAndUpdate(
+      { name: teamName },
+      { $inc: { score: -score } },
+      { new: true }
+    );
 
-  // Decrement the team's score
-  team.score -= score;
-  res.json({ message: 'Score decremented successfully', team });
+    if (!team) {
+      return res.status(404).json({ message: 'Team not found' });
+    }
+
+    res.json({ message: 'Score decremented successfully', team });
+  } catch (err) {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 // Start the server
