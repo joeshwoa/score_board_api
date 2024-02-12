@@ -9,11 +9,7 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 
 // Connect to MongoDB
-mongoose.connect('mongodb+srv://joeshwoageorge:J0eshwoa@jodb.0fzmbui.mongodb.net/', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  useFindAndModify: false // To avoid deprecation warnings
-})
+mongoose.connect('mongodb+srv://joeshwoageorge:J0eshwoa@jodb.0fzmbui.mongodb.net/', {})
 .then(() => {
   console.log("Connected to MongoDB");
 })
